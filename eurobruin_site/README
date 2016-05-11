@@ -1,0 +1,17 @@
+Q
+How to add the plot to each region?
+A
+=in the assets/js/plot.js file 
+=>there is an plot object. add/change it there
+
+Q
+How to set the color of the map?
+A
+=>to set the color of countries and border:
+  goto the source/js/jquery.mapael.js
+  in the $.fn.mapael.defaultOptions = {} section
+
+Q
+How to set the size of the map?
+A
+=>goto source/js/maps/european_union.js
