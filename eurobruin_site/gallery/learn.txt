@@ -1,0 +1,692 @@
+
+
+################
+Use Imgur Api
+
+(1) we need to register out applcation in the imgur
+(2) we need to get a user id and API key
+(3) use postman to test out the API
+(4) include user id in the header so the Imgur server can verify our identity,
+
+
+
+#################
+Getting started
+
+(1) download the reactstarter from the stephen grider's website
+(2) npm install to install all the dependencies we will need.
+(3) then use gulp to test it out
+
+
+Q
+what is the react router?
+A
+it is used to facilitate the single page application. 
+in tradional website, we have to use different links and diferent .html files to let the user navigate to diferent pages.
+Now, in the single page application, user will only download index.html page and according to different url, load different contents. 
+=>what is the advantage of that?
+super fast, we do not need to refresh the page  and re-render any page
+
+
+
+intall react router:
+=>npm install --save react-router@1.0.3 history
+
+#######################################
+Change the structure to support routes
+
+Q
+What is the basic structure if we use the routes?
+A
+=>We put all of the components in the src/component folder
+=>routes.jsx 
+   this file handles the routes, specifying which url will display which components.
+   whatever components used in this file should be reuqired first. 
+=>we simply require the routes.jsx file in the app.jsx
+
+
+
+Q
+How to write a typical component?
+A
+ (1) require the react component
+ (2) module.exports = React.createClass({
+ 		render: function(){
+ 			return:
+ 		}
+ });
+
+=>Baisically is the same as  ususal
+
+Q
+How to write the app.jsx file?
+A
+(1) require the routes.jsx file
+(2) dont need the React.createElement method
+(3) render the routes :
+	ReactDOM.render(Routes, document.querySelector('.container'));
+
+
+
+Q
+How to write the routes.jsx file?
+A
+(1) need to require all these:
+	var React = require('react');
+	//do the routing on the page
+	var ReactRouter = require('react-router');
+	//actual router object, decide what content to show
+	var Router = ReactRouter.Router;
+	//config router, instruct how to construct
+	var Route = ReactRouter.Route;
+
+(2) what ever components needed should be required
+	
+(3) module.exports = (
+	<Router>
+		<Route path="/" component = {Main}>
+			//nested inside of the paht "/"
+			
+		</Route>
+	</Router>
+);
+
+
+Q
+Since the anchor (<a>) will by default always reload the page, how can we make the link to simply rerender the part of component without refrreshing the page?
+A
+=>use the <Link to={} ></Link>
+=>inorder to use thr Link, we need to include:
+var ReactRouter = require('react-router');
+var Link = ReactRouter.Link;
+
+
+Q
+For the routes, how can we handle those repeated routes, say a list of images with different ids?
+A
+=>copy paste the code is not a good idea
+=>the idea is to use a parameter in the link:
+<Route path="topics/:id" component={Topic} />
+which means whatever 
+<Link to={"topics/"+topic.id} > will be directed to <Route path="topics/:id" component={Topic} />
+
+
+
+=>later we can access the passed in parameter in the component by this.props.param.id
+
+
+
+Q
+Where do we put the css files and where do we include it? since for now we are just defining the componnent, there is no place we can include the css files. 
+A
+=>although we are using the react, but we are still having the index.html file(which serve as the entrance for the whole web app) so we incude the css file in the index.html
+=>remeber we need to include the main.js in the <script> at the bottom of the index.html file, where main.js is the final combinatin of all the jsx file and got translated to the js file. 
+=>since we are using the react starter, so this things have been covered. 
+
+
+Q
+Since we are building the singel page aplication, <a> is not suppporting that since whenever we use the <a> it will reload another page. what should we do about it?
+A
+=><a> is not supporting it, so we need to use somethin else
+=>we can use <Link> which is a part from Router class.
+=>How to use <Link>
+(1)  we need to require the react-router :
+		var Router = require('react-router');
+		var Link = Router.Link;
+(2) then we simply use the <Link> instead of the <a>
+do notice that we need to change the href="" to to=""
+Ex:
+<Link to = "/" className="navbar-brand">
+					Imgur Browser
+				</Link>
+
+
+
+
+
+#######################
+Building the API module
+
+Since we are fetching data from the backend through api calls, we need to have a module to handle these api calls, so we can achieve something like this:
+
+api.get('url').then(function(data){
+	//Do something
+})
+
+
+=>We put the api.jsx (API module in the util directory)
+The api.jsx module looks like this:
+//fetch data using imgur api
+//api module
+var Fetch = require('whatwg-fetch');
+var rootUrl = 'https://api.imgur.com/3/';
+var apiKey = '4098ade8f937743';
+
+
+//fetch will makes an Ajax request to whaeaver url we pass to it
+module.exports = window.api= {
+	get: function (url){
+		return fetch(rootUrl+url, {
+			headers: {
+				'Authorization': 'Client-ID' + apiKey
+			}
+		})//return a promise object
+		//call back function in the then will be called rightafter get function get the result back
+		.then(function(response){
+			return response.json()
+		});
+		
+	}
+};
+
+whatwg-fetch is a module that can make ajax request to url we pass in:
+
+we define a get function which takes in url 
+which will return a promise object by making fetch function call
+
+fetch(url, {header: {} })
+
+=>then function will be called rightafter fetch function fetch back the data. the thing returned will be availabe in the argument of the call back function.
+
+
+Q
+How to use the api module?
+A
+=>require it:
+var Api = require('./api');
+
+=>Api.get(url).then(function(data){
+	//Do something with the data
+	//here the data should be just a json
+})
+
+
+Q
+What is flux?
+A
+=>flux is like the glue that serve as the middleware to fetch the data from the imgur api and plugin to our views. 
+
+
+
+############################
+  Building the topic list
+
+remember in the first page, we have a navigation bar and have topic list on it.
+
+we are building that topic list here.
+
+=>since the topic list should appear at the top of the navigation bar and only appear at the main routes
+=>we put the topic list in a new component called topic-list.jsx
+=>in order to make it do things like: if it is in the main route, nav bar display the topic list, if in other nested route, dont display the topic list, we put this logic to a function:
+
+render: function(){
+		return <div>
+		<Header />  
+		{this.content()}
+		</div>
+	},
+
+content:  function(){
+		if(this.props.children){
+			return this.props.children;
+		}
+		else
+		{
+			return <TopicList />
+		}
+	}
+
+###############################
+  Install the reflux
+
+=>When I install the reflux, i am having an error that:
+npm ERR! peerinvalid The package history@2.0.1 does not satisfy its siblings' peerDependencies requirements!
+npm ERR! peerinvalid Peer react-router@1.0.3 wants history@^1.17.0
+
+=>this error occur is beacuse package.json dependencies
+=>i fix this error by adding 
+"history": "^1.17.0", to the package.json
+
+Q 
+How to get the data using flux and use it on the view?
+A
+[Basic idea]
+=>to use the Api module to get the data
+=>store the data in the state
+=>use and put the data on the view simply by reference this.state.data
+
+Q
+when do we need to use the bind(this) function?
+A
+=>use it for the call back function that has this.something inside
+Ex:
+componentWillMount: function(){
+		TopicStore.getTopics()
+			.then(function(){
+				this.setState({
+					topics: TopicStore.topics
+				});
+			}.bind(this));
+	//bind(this) is to bind this to the calling function
+	//where to use the bind()? 
+	//=>use it for the call back function which has this. in side of the function body
+
+	},
+
+
+Q
+what is the problem for using the api module and fetch the data in the component file?
+A
+=>we can not communicate the data between the sibling components.
+=>component supose be responsible only for html code and handle user interaction.
+
+Q
+where should we put the code for handling data transmision?
+A
+=>in the src/stores
+=>create a file topic-store.jsx file
+=>inside the file, we include the api module and also require the redux module.
+we write the code prettu much the same as the old version, we 
+export the code and store the data in the this.topics so later we can reference the data in TopicStore.topics
+
+var Api = require('../utils/api');
+var Reflux = require('reflux');
+
+
+module.exports = Reflux.createStore({
+	getTopics:function(){
+		return Api.get('topics/defaults')
+			.then(function(json){
+				this.topics = json.data;
+			}.bind(this));
+	}
+});
+
+// in the topic-list.jsx (component)
+componentWillMount: function(){
+		TopicStore.getTopics()
+			.then(function(){
+				this.setState({
+					topics: TopicStore.topics
+				});
+			}.bind(this));
+	//bind(this) is to bind this to the calling function
+	//where to use the bind()? 
+	//=>use it for the call back function which has this. in side of the function body
+
+	},
+
+=>we still fetch the data in the componentWillMount function, since we obnly need to fetch the data once. 
+
+Q
+What is the problem of the implementation above?
+A
+=>since we put the code inside of the componentWillMount()
+and this function will only be rendered once, so when the topic get updated, we can not update it in this page, since it only be rendered once/
+
+
+So now we need to figure out a way that whenever something changed or updated in the topic, we can refetch the data and re render it agian. 
+
+
+
+#################################
+##Recap the structure of Reflux##
+#################################
+
+
+Q
+What is Reflux?
+A
+=>A simple library for uni-directional dataflow application architecture inspired by ReactJS Flux
+
+
+    _____________________________<____________________________
+   |                                                          | 
+   |	                                                      |
+   |   														  |
+Action -------------------> Store --------------------> Component(state)
+		    	(1)                       (2)
+(1) Action->Store: in the Store file, we use: listenable: [whtateverAction]
+	listenable is the special thing: it connect the Action with the Store
+	Store will be notified if any action occured. 
+	when the Action.function is involked, the same function in the Store will be involed
+
+(2) Store->Component: We connect Store and Component by putting 
+	mixins: [ Reflux.listenTo(TopicStore, 'onChange') ]  in the component file
+
+	In the Store, there is a trigger function, which will cause the listenTo function in the component mixin to call the the onChange function (with the data generated i Store), which will set the state.
+
+	//The main subscriber method is listenTo:
+	subscriber.listenTo(publisher,eventname,callback);
+	//The publishers then have a corresponding trigger method. So if the publisher above did this:
+	publisher.trigger(eventname,data1,data2);
+	//Then this call would be made in response:
+	callback(data1,data2);
+
+
+	some general laws to follow:
+	=>isolate database communication into Stores
+	=>When Store receive new data from server, it should trigger with the new data
+	=>React component should listen to relevent Stores
+	=>React component should call actions in response for the user event
+	=>Stores should listen to actions and potentially talk to backend API:s accordingly, which might in turn cause new data to be sent back and thus an event to be triggered.
+
+	TD;DR
+	=>A component calls Actions and listens to Stores.
+	=>A store listens to Actions and triggers events in Component
+
+
+
+Q
+What is Action?
+A
+=>Action defines the name of the functions that will be listened by the Store
+=>Action informs the Store which function to call
+functions in store that match exactly the same in the Action will be involked or those have on prefix 
+
+Q
+How to write the Action file?
+A
+Ex:
+var Reflux = require('reflux');
+
+var ContentReviewerActions = Reflux.createActions({  
+ // Child actions 'completed' and 'failed' are called by resolution of listenAndPromise
+ "loadReview": { children: ['completed', 'failed'] },
+ "updateStatus": {},
+ "submitReview": {}
+});
+
+//in the Store file:
+onLoadReview()
+onLoadCompleted()
+onUpdateStatus()
+.etc. will be matched
+
+
+
+Q
+What is Store?
+A
+=>Store contains component's state and logic
+=>Store listen to the Action, whenever action function is called, those corresponding function in the Store will be called
+=>Store will call the trigger function which will take in the new data and inform the Component to update the state.
+
+
+
+
+
+
+In the src directory, we have three child directories:
+src/components
+src/stores
+src/utils
+
+=>src/components are the place we store our views (html components and handle user interaction)
+
+=>src/utils/api.jsx use the fetch module, is the place where we put in api and fetch back the json data back.
+
+=>src/stores is the place we store the customize module/function for each url
+	we sperate the client-server interaction for each differenct api calls. 
+	api provides a general method where we put in a url, it fetch back a json.
+	however, we need somehow give each url a distickt method to interact with the server. Why?
+	because for each different url, we need to add on some customize function, like verification, or updating when change.etc.
+
+=>src/actions.jsx:
+
+
+
+
+
+##################
+Q
+How can we assign a special class name to a current active link? the one under clicked.
+
+A
+=>we can use activeClassName
+
+
+##############################################
+  Fetching the images for a specific topic
+##############################################
+
+still, we need to follow the design pattern of the redux:
+
+Action ===> Store ===> Component
+
+Sotore need to listen to the Actions. Whatever functions we declared in the Store that we want to be called should be specified in the Action:
+
+#Ex:
+var Reflux = require('reflux');
+
+module.exports = Reflux.createActions([
+	'getTopics',
+	'getImages'
+	]);
+
+Store should have a function (listening on Action) getImage which call the api and call the trigger function to inform the component
+
+#EX:
+var Reflux = require('reflux');
+var Api = require('../utils/api');
+var Actions = require('../actions');
+
+module.exports = Reflux.createStore({
+	listenables: [Actions],
+	getImages: function(topicId){
+		Api.get('topics/' +topicId)
+			.then(function(json){
+				this.images = json.data;
+				this.triggerChange();
+			}.bind(this));
+	},
+
+	triggerChange: function(){
+		this.trigger('change', this.images);
+	}
+});
+
+component should listen to the Store (by mixin) and using the data from the Store to update the state:
+
+Ex:
+mixins: [
+		Reflux.listenTo(ImageStore, 'onChange')
+	],
+
+	render: function(){
+		return <div>
+		
+
+		</div>
+	},
+
+//call the Action via componentWillMount
+	componentWillMount: function(){
+		Actions.getImages(this.props.params.id);
+	},
+
+	onChange: function(event, images){
+		this.setState({images: images})
+	}
+
+
+
+Q
+Since we already have the image information, how can we post the image on the page?
+A
+[Basic idea]:
+=>the image information is stored in the this.state.images in the topic component
+=>we create new componet <ImagePreview> to handle the image display, we pass in the this.state.images as the props to <ImagePreview///when we pass the object as props using {... image}
+			//react will transfer all the fileds in image to the this.props.
+			//so later we can use this.props.something directly
+			return <ImagePreview key={image.id} {...image} />>
+
+then in the <ImagePreview> we can simply write:
+image: function(){
+		var link = 'http://i.imgur.com/'+this.props.id + 'h.jpg';
+
+		return <img src={link} />
+	}
+
+Q
+how can we filter out the albums inside of the photo?
+A
+=>var _ = require('lodash');
+//json.data is an array
+//if the function is true, then the certain data will be rejected. 
+=>this.images = _.reject(json.data, function(image){
+					return image.is_album
+				});
+
+
+=>lodash is a library that makes easier for iterating arrays, objects and strings.
+
+
+
+Q
+How does sass connect with the index.html since we haven't specify where to include the sass file?
+A
+=>in the component file, we specify className="something"
+
+if something match the file name in sass directory:
+something.scss
+
+Q
+How can we make the effect that when we put our mouse on the picture, it gonna play the video?
+A
+=>first, we need to find out a way that can listen if there is a mouse hoover on the picture.
+	the two listeners are onMouseEnter and onMouseLeave
+	onMouseEnter={this.handleMouseEnter}
+	onMouseLeave={this.handleMouseLeave}
+
+	when the event happen, we set up the state,
+	if the onMuseEnter happen, we set the hoovering state to true:
+	handleMouseLeave: function(){
+		this.setState({hovering: false});
+	},
+
+	handleMouseEnter: function(){
+		this.setState({hovering: true});
+	}
+
+=>then, we use the conditional operator to test if the state of hoovering is true or false. 
+if it is true, we disply it with video,
+else, we display it with image:
+
+
+{this.props.animated && this.state.hovering ? this.video() : this.image()}
+
+
+video: function(){
+		return <div>
+			<video preload='auto' autoPlay='autoplay' loop='loop' webkit-playsinline>
+				<source src={this.props.mp4} type='video/mp4'></source>
+			</video>
+		</div>
+	},
+
+
+
+
+####################################
+  the third screen: image detail
+
+
+still follow the action->store->component design patterm
+we have the image-detail.jsx component file
+we use the image-store.jsx as the store
+
+in the image-detail component, it listens to the image-store, and should get the image as the state.
+in the image-store, we should somehow find a way to give image-detail a selected image according to its id.
+
+
+
+I made a huge mistake:
+
+if i initialize an object as null, I am not be able to assign it new object any more.
+
+
+############################################
+    Render informations on the third page
+
+ =>Since we already have the image stored on the this.state.image
+
+ so we just need to pull off the information from the this.state.image and put that on the third screen.
+ render: function(){
+		//console.log(this.state.image);
+		return <div>
+			{this.state.image? this.renderContent() : null}
+		</div>
+	},
+
+	renderContent: function(){
+		return <div>
+			<div className="panel panel-default" >
+				<div className="panel-heading" >
+					<h4>{this.state.image.title}</h4>
+				</div>
+
+				<div className="panel-body" >
+					{this.renderImage()}
+				</div>
+
+				<div className="panel-footer" >
+					{this.state.image.description}
+				</div>
+			</div>
+		</div>
+	},
+
+	renderImage: function(){
+		if (this.state.image.animated)
+		{
+			return <video preload="auto" autoPlay="autoplay" loop="loop" webkit-playsinline>
+						<source src={this.state.image.mp4} />
+					</video>
+		}
+		else
+		{
+			return <img src={this.state.image.link} />
+		}
+	},
+
+
+
+#############################
+  Displaying the comments
+
+As ususal, we need to follow action->store->componenent convention
+
+in this time, we declare the getImage function in the store, however, share the same action with the image-store
+
+meaning, redefine the getImage in the comment-store
+
+
+
+In the image-detail component, we listen to the comment-store, and set the comment state.
+Since comment and image share the same getImage action, so when getImage action is called, both comment-store and image-store will hear that.
+
+comment-store, after hearing the action, will call the api ('gallery/'+ id+ '/comments')
+
+and sotre the data in the this.comments
+
+later in the image-detail component, we can simply use the CommentStore.comments to reference the data. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,55 @@
+body {
+  padding-top: 50px;
+  background-color: #000000;
+
+}
+.starter-template {
+  padding: 40px 15px;
+  text-align: center;
+}
+
+.navbar{
+	background-color : #545557;
+}
+
+.img{
+	width: 350px;
+	height: 200px;
+	border-style: none;
+	border: 0px;
+	border-radius: 0px;
+}
+
+.link{
+	display: block;
+	padding-right: 100%;
+	padding-bottom: 2%;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+body {
+  /* Margin bottom by footer height */
+  margin-bottom: 60px;
+}
+
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  /* Set the fixed height of the footer here */
+  height: 60px;
+  background-color: #222222;
+}
+
+.icon{
+	width: 30%;
+	padding-top: 6%;
+	margin-left: 16%;
+}
+
+.row{
+	padding-bottom: 4%;
+}

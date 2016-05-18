@@ -1,0 +1,307 @@
+#############################################
+##                                         ##
+##      Project Review - Imgur viewer      ##
+##                                         ##
+#############################################
+
+
+
+
+###########################################
+General idea about structure about this app
+###########################################
+
+
+Q 
+How to set up a react app?
+A
+there are a couple things needed
+1. a src directory where we put all of the jsx files
+2. saas file where we put the css files
+3. gulpfile.js within it we need to specify how to compile the jsx files in the src to the main.js file
+4. package.json where we specify the dependency of this react app (like what modules and their verison do we need to run it)
+5. index.html file where serve as the entrace to the app (simply include react.js and the main.js in the end)
+
+=>we can always clone the starter from here:
+git clone https://github.com/StephenGrider/ReactStarter.git
+
+
+Q
+What is the structure of this app?
+A
+=>node_modules (put all the npm installed modules)
+=>sass (put css files)
+=>src (put all jsx files)
+	=>components
+	=>stores
+	=>utils (for some supporting, low level modules like api.jsx)
+	actions.jsx 
+	app.jsx (this is like a bootsrap file where include the routes.jsx and specify where to render the component)
+
+gulpfile.jsx (specify how to compile the jsx file where to store the compiled result)
+index.html (entre to the website, icnlude the main.js file)
+main.js (compiled and combined all the jsx file)
+package.json (specify the dependency which version of the npm module to download if uploaded to the server.)
+
+
+Q
+Why use react?
+A
+=>react soleved one problem: building application with data that changes over time.
+how does react realize this function?
+->divide view into components
+->comppnents have their states
+->whenever states changed, react will rerender the component (only the part that need update)
+->use the action->store->component structure, to control the data flow.
+
+Q
+How does react realize the single page application idea?
+A
+=>Use the Route and Link
+=>so when clicking a link, it will not have to refresh the page
+
+Q
+What is gulp.js?
+A
+=>gulp is a streaming build system
+=>gulp has three main apis: task, watch, src and dest
+
+
+
+
+############################################
+Recap about how action/store/component works
+############################################
+
+Q
+What is Reflux?
+A
+=>A simple library for uni-directional dataflow application architecture inspired by ReactJS Flux
+
+
+    _____________________________<____________________________
+   |                                                          | 
+   |	                                                      |
+   |   														  |
+Action -------------------> Store --------------------> Component(state)
+		    	(1)                       (2)
+(1) Action->Store: in the Store file, we use: listenable: [whtateverAction]
+	listenable is the special thing: it connect the Action with the Store
+	Store will be notified if any action occured. 
+	when the Action.function is involked, the same function in the Store will be called
+
+(2) Store->Component: We connect Store and Component by putting 
+	mixins: [ Reflux.listenTo(TopicStore, 'onChange') ]  in the component file
+
+	In the Store, there is a trigger function, which will cause the listenTo function in the component mixin to call the the onChange function (with the data generated i Store), which will set the state.
+
+	//The main subscriber method is listenTo:
+	subscriber.listenTo(publisher,eventname,callback);
+	//The publishers then have a corresponding trigger method. So if the publisher above did this:
+	publisher.trigger(eventname,data1,data2);
+	//Then this call would be made in response:
+	callback(data1,data2);
+
+
+	some general laws to follow:
+	=>isolate database communication into Stores
+	=>When Store receive new data from server, it should trigger with the new data
+	=>React component should listen to relevent Stores
+	=>React component should call actions in response for the user event
+	=>Stores should listen to actions and potentially talk to backend API:s accordingly, which might in turn cause new data to be sent back and thus an event to be triggered.
+
+	TD;DR
+	=>A component calls Actions and listens to Stores.
+	=>A store listens to Actions and triggers events in Component
+
+
+
+Q
+What is Action?
+A
+=>Action defines the name of the functions that will be listened by the Store
+=>Action informs the Store which function to call
+functions in store that match exactly the same in the Action will be involked or those have on prefix 
+
+Q
+How to write the Action file?
+A
+Ex:
+var Reflux = require('reflux');
+
+var ContentReviewerActions = Reflux.createActions({  
+ // Child actions 'completed' and 'failed' are called by resolution of listenAndPromise
+ "loadReview": { children: ['completed', 'failed'] },
+ "updateStatus": {},
+ "submitReview": {}
+});
+
+//in the Store file:
+onLoadReview()
+onLoadCompleted()
+onUpdateStatus()
+.etc. will be matched
+
+
+
+Q
+What is Store?
+A
+=>Store contains component's state and logic
+=>Store listen to the Action, whenever action function is called, those corresponding function in the Store will be called
+=>Store will call the trigger function which will take in the new data and inform the Component to update the state.
+
+
+In the src directory, we have three child directories:
+src/components
+src/stores
+src/utils
+
+=>src/components are the place we store our views (html components and handle user interaction)
+
+=>src/utils/api.jsx use the fetch module, is the place where we put in api and fetch back the json data back.
+
+=>src/stores is the place we store the customize module/function for each url
+	we sperate the client-server interaction for each differenct api calls. 
+	api provides a general method where we put in a url, it fetch back a json.
+	however, we need somehow give each url a distickt method to interact with the server. Why?
+	because for each different url, we need to add on some customize function, like verification, or updating when change.etc.
+
+=>src/actions.jsx:
+
+
+Q
+Where does component receive its data?
+A
+there are two major ways they can receive data:
+(1) passed in as parameter:
+	Ex: <CommentBox comments={this.state.comments} />
+	then in the CommentBox, we can use:
+	this.props.comments to access it.
+
+	or we can pass in an object instead of single data:
+	every field inside of the object will be transfered under this.props.
+
+(2) pushed in via Store
+	
+	inside the componet, there is a mixin, specify which store to listen to
+	if the store triggered anything, onChange will be called and the new data pushed by store will be given as a paramter to the onChange 
+mixins: [
+		//whenever there is a change in TopicStore, it gonna call onChange function
+		Reflux.listenTo(TopicStore, 'onChange')
+	],
+
+
+	onChange: function(event, topics){
+		this.setState({
+			topics: topics
+		});
+	}
+
+
+
+
+
+##############################################
+How to use fetch.js to get around with restapi
+##############################################
+
+var Fetch = require('whatwg-fetch');
+var rootUrl = 'https://api.imgur.com/3/';
+var apiKey = '4098ade8f937743';
+
+
+//fetch will makes an Ajax request to whaeaver url we pass to it
+module.exports = window.api= {
+	get: function (url){
+		return fetch(rootUrl+url, {
+			headers: {
+				'Authorization': 'Client-ID ' + apiKey
+			}
+		})//return a promise object
+		//call back function in the then will be called rightafter get function get the result back
+		.then(function(response){
+			return response.json()
+		});
+		
+	}
+};
+
+
+
+
+we use the fetch in the api.js where give out a get function, gete(url) will return a json passed from that url
+
+fetch(url, {headers: {}}) will return a promise contain the information from the url
+.then(function(response){return response.json}) // will convert the promise into a json so can be used latter 
+
+
+############################
+How to use the router.js
+############################
+
+
+var React = require('react');
+//do the routing on the page
+var ReactRouter = require('react-router');
+//actual router object, decide what content to show
+var Router = ReactRouter.Router;
+//config router, instruct how to construct
+var Route = ReactRouter.Route;
+var Topic = require('./components/topic');
+
+
+var Main = require('./components/main');
+var ImageDetail = require('./components/image-detail');
+
+
+module.exports = (
+	<Router>
+		<Route path="/" component = {Main}>
+			//nested inside of the paht "/"
+			//we can put a parameter to the url
+			//insode the Topic, will have this.props.id = 
+			<Route path="topics/:id" component={Topic} />
+			<Route path="images/:id" component={ImageDetail} />
+		</Route>
+	</Router>
+);
+
+
+=>routes.jsx serve as the map of the whole app. 
+=>it is kinda like a table structure:
+
+<Router>
+	<Route path="" component={}>
+		<Route path="" component={} />
+	</Route>
+</Router>
+
+the nested route will always display its parents route
+
+certain route path is hit, will desplay the component associated with it(if as a child route, will alson display the parent route)
+
+
+
+
+##################################
+##   Code Review for imgur  ######
+##################################
+
+=>index.html will execute the main.js file which will start at app.js
+=>app.js render the routes.js file:
+	so according to different  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
